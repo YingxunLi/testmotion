@@ -17,8 +17,8 @@ let stopped = false;
 let reset = 0;
 let magnets = [];
 
-const cfHit = { group: 0, category: 0x0001, mask: 0xFFFFFFFF };
-const cfPass = { group: -1, category: 0x0001, mask: 0x0000 };
+const cfHit = { group: 0, category: 0x0001, mask: 0xFFFFFFFF }; // 正常碰撞
+const cfPass = { group: -1, category: 0x0001, mask: 0x0000 }; // 互相穿越
 
 function setup() {
   const canvas = createCanvas(960, 960);
@@ -134,13 +134,19 @@ function draw() {
       magnets.forEach(list => list.forEach(magnet => {
         const body = magnet.attracted[0];
         if (!body.isStatic) {
+          // 在重新组合时禁用碰撞
+          body.collisionFilter = cfPass;
+
           magnet.attract();
           const d = dist(magnet.body.position.x, magnet.body.position.y, body.position.x, body.position.y);
-          if (d < 100) {
+          if (d < 60) {
             reset--;
             Matter.Body.setPosition(body, body.plugin.lastPos);
             Matter.Body.setStatic(body, true);
             Matter.Body.setAngle(body, 0);
+
+            // 重新组合完成后启用碰撞
+            body.collisionFilter = cfHit;
           }
         }
       }));
@@ -181,6 +187,7 @@ function mousePressed() {
       digits.forEach(part => {
         part.body.plugin.lastPos = { x: part.body.position.x, y: part.body.position.y };
         Body.setStatic(part.body, false);
+        part.body.collisionFilter = cfPass; // 允许碎片互相穿越
       });
     } else {
       reset = digits.length;
