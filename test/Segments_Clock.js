@@ -60,7 +60,7 @@ walls.push(new BlockCore(world, { x: width / 2, y: height + 30, w: width, h: 60,
         console.log('FRAME', added, time, fromCache)
         for (let id in added) {
           const idx = id.substring(3, 4)
-          added[id].attributes.stroke = 'rgb(0,79,79)'; // Neue Stroke-Farbe
+          added[id].attributes.stroke = 'white'; // Neue Stroke-Farbe
           if (added[id].body) {
             if (!ziffernParts[idx]) {
               ziffernParts[idx] = [added[id]];
