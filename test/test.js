@@ -30,7 +30,7 @@ function setup() {
 
   engine = Engine.create();
   world = engine.world;
-  
+
   engine.gravity.y = 0;
 
   ground = new BlockCore(
@@ -103,7 +103,7 @@ function createDigit(d, z) {
       },
       { ...part.options, label: 'D' + d + z })
     digits.push(clone);
-    
+
     const magnet = new Magnet(
       world,
       {
@@ -131,6 +131,45 @@ function removeDigit(d, z) {
     magnets[d].forEach(magnet => World.remove(world, magnet.body));
     magnets[d] = [];
   }
+}
+
+function draw() {
+  background(0);
+  // Update gravity based on current direction
+  engine.world.gravity.x = gravityDirection.x;
+  engine.world.gravity.y = gravityDirection.y;
+
+  if (!stopped) {
+    if (reset > 0) {
+      magnets.forEach(list => list.forEach(magnet => {
+        const body = magnet.attracted[0];
+        if (!body.isStatic) {
+          magnet.attract();
+          const d = dist(magnet.body.position.x, magnet.body.position.y, body.position.x, body.position.y)
+          if (d < 100) {
+            reset--;
+            Matter.Body.setPosition(body, body.plugin.lastPos);
+            Matter.Body.setStatic(body, true);
+            Matter.Body.setAngle(body, 0);
+            // body.collisionFilter = cfHit;
+          }
+        } else {
+          // body.collisionFilter = cfPass;
+        }
+      }));
+    } else {
+      clock();
+    }
+  }
+  digits.forEach(part => part.draw());
+  // magnets.forEach(list => list.forEach(magnet => magnet.draw()));
+  ground.draw();
+  walls.forEach(wall => wall.draw());
+
+  mouse.draw();
+
+
+
 }
 
 function keyPressed() {
@@ -168,29 +207,37 @@ function updateCollisionFilter(body, enableCollision) {
     body.collisionFilter = { ...cfHit, mask: 0x0001 }; // Nur Kollision mit Wänden
   }
 }
-
 function draw() {
   background(0);
 
-  engine.world.gravity.x = gravityDirection.x;
-  engine.world.gravity.y = gravityDirection.y;
+    // apply rotation of device to gravity
+    engine.gravity.x = (rotationY / 2 - engine.gravity.x) * 0.5;
+    engine.gravity.y = (rotationX / 2 - engine.gravity.y) * 0.5;
+    
   
   if (!stopped) {
     if (reset > 0) {
       magnets.forEach(list => list.forEach(magnet => {
         const body = magnet.attracted[0];
         if (!body.isStatic) {
+          // Deaktiviere nur die Kollision mit anderen Ziffern-Teilen
           updateCollisionFilter(body, false);
-          
+          // Deaktiviere die Kollision, solange der Magnet anzieht
+          body.collisionFilter = cfPass;
+
           magnet.attract();
           const d = dist(magnet.body.position.x, magnet.body.position.y, body.position.x, body.position.y);
+          const d = dist(magnet.body.position.x, magnet.body.position.y, body.position.x, body.position.y)
           if (d < 60) {
             reset--;
             Matter.Body.setPosition(body, body.plugin.lastPos);
             Matter.Body.setStatic(body, true);
             Matter.Body.setAngle(body, 0);
-            
+
+            // Reaktiviere die Kollision mit anderen Ziffern-Teilen
             updateCollisionFilter(body, true);
+            // Reaktiviere die Kollision, sobald das Teil am Platz ist
+            body.collisionFilter = cfHit;
           }
         }
       }));
@@ -204,16 +251,19 @@ function draw() {
   walls.forEach(wall => wall.draw());
   mouse.draw();
 
+  // Update gravity based on current direction
+  engine.world.gravity.x = gravityDirection.x;
+  engine.world.gravity.y = gravityDirection.y;
 
-  
+  // Zeichne den Doppelpunkt
   if (showColon) {
     fill(0, 79, 79);
+    fill(0,79,79);
     noStroke();
     ellipse(440, 350, 45, 45);
     ellipse(440, 450, 45, 45);
   }
 }
-
 
 
   digits.forEach(part => part.draw());
@@ -224,7 +274,7 @@ function draw() {
   // Update gravity based on current direction
   engine.world.gravity.x = gravityDirection.x;
   engine.world.gravity.y = gravityDirection.y;
-  
+
   // Zeichne den Doppelpunkt
   if (showColon) {
     fill('red');
@@ -245,7 +295,7 @@ function mousePressed() {
     } else {
       reset = digits.length;
     }
-    
+
     // Umschalten des Doppelpunkts
     showColon = !showColon;
   }
