@@ -265,7 +265,7 @@ function draw() {
   
   // Zeichne den Doppelpunkt
   if (showColon) {
-    fill(255);
+    fill('red');
     noStroke();
     ellipse(440, 350, 45, 45);
     ellipse(440, 450, 45, 45);

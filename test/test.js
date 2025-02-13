@@ -1,12 +1,3 @@
-/*
-VSCode Find/Replace mit .*
-<g id="([^"]+)">\n    <path([^\n]+)\n  </g>
-<path id="$1"$2
-<g id="([^"]+)">\n    <polygon([^\n]+)\n  </g>
-<polygon id="$1"$2
-<g id="([^"]+)">\n    <rect([^\n]+)\n  </g>
-<rect id="$1"$2
-*/
 let Engine = Matter.Engine,
   World = Matter.World,
   Bodies = Matter.Bodies,
@@ -37,14 +28,17 @@ const cfPass = { group: -1, category: 0x0001, mask: 0x0000 }
 function setup() {
   const canvas = createCanvas(960, 960);
 
-  engine.gravity.y = 0;
-
   engine = Engine.create();
   world = engine.world;
 
+  
+  engine.gravity.y = 0;
+
+
+
   ground = new BlockCore(
     world,
-    { x: 400, y: height + 10, w: width, h: 20, color: 'white' },
+    { x: 400, y: height + 10, w: width, h: 20, color: 'blue' },
     { isStatic: true }
   );
 
@@ -59,14 +53,14 @@ walls.push(new BlockCore(world, { x: width / 2, y: height + 30, w: width, h: 60,
   // Die Ziffern werden 1x geladen werden und später durch kopieren verwendet
   // "save: true" speichert die Daten im Browser
   // wenn das SVG geändert wird, muss es 1x auf "save: false" gesetzt werden !!!
-  new BlocksFromSVG(world, 'ZahlenBIG2.svg', [],
+  new BlocksFromSVG(world, 'Segments_Ziffern.svg', [],
     { isStatic: true, restitution: 0.7, friction: 0.0, frictionAir: 0.0 },
     {
       save: false, sample: 10, offset: { x: 0, y: 0 }, done: (added, time, fromCache) => {
         console.log('FRAME', added, time, fromCache)
         for (let id in added) {
           const idx = id.substring(3, 4)
-          added[id].attributes.stroke = 'rgb(0,79,79)'; // Neue Stroke-Farbe
+          added[id].attributes.stroke = 'white'; // Neue Stroke-Farbe
           if (added[id].body) {
             if (!ziffernParts[idx]) {
               ziffernParts[idx] = [added[id]];
@@ -74,7 +68,7 @@ walls.push(new BlockCore(world, { x: width / 2, y: height + 30, w: width, h: 60,
               ziffernParts[idx].push(added[id]);
             }
             World.remove(world, added[id].body)
-            added[id].attributes.color = 'rgb(0,79,79)'; // Neue Part-Farbe
+            added[id].attributes.color = 'white'; // Neue Part-Farbe
           } else {
             console.log('Ziffern Teil ' + id + ' ist fehlerhaft')
           }
@@ -144,7 +138,10 @@ function removeDigit(d, z) {
 
 function draw() {
   background(0);
-
+  // Update gravity based on current direction
+  engine.world.gravity.x = gravityDirection.x;
+  engine.world.gravity.y = gravityDirection.y;
+  
   if (!stopped) {
     if (reset > 0) {
       magnets.forEach(list => list.forEach(magnet => {
@@ -174,9 +171,7 @@ function draw() {
 
   mouse.draw();
 
-  // Update gravity based on current direction
-  engine.world.gravity.x = gravityDirection.x;
-  engine.world.gravity.y = gravityDirection.y;
+
 
 }
 
@@ -211,6 +206,12 @@ let showColon = true; // Variable zur Steuerung des Doppelpunkts
 function draw() {
   background(0);
 
+
+    // apply rotation of device to gravity
+    engine.gravity.x = (rotationY / 2 - engine.gravity.x) * 0.5;
+    engine.gravity.y = (rotationX / 2 - engine.gravity.y) * 0.5;
+    
+  
   if (!stopped) {
     if (reset > 0) {
       magnets.forEach(list => list.forEach(magnet => {
@@ -262,12 +263,12 @@ function draw() {
   mouse.draw();
 
   // Update gravity based on current direction
-  engine.gravity.x = (rotationY / 2 - engine.gravity.x) * 0.5;
-  engine.gravity.y = (rotationX / 2 - engine.gravity.y) * 0.5;
+  engine.world.gravity.x = gravityDirection.x;
+  engine.world.gravity.y = gravityDirection.y;
   
   // Zeichne den Doppelpunkt
   if (showColon) {
-    fill(255);
+    fill('red');
     noStroke();
     ellipse(440, 350, 45, 45);
     ellipse(440, 450, 45, 45);
