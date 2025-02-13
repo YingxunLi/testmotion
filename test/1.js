@@ -64,19 +64,21 @@ function setup() {
 
   Runner.run(engine);
 
-  // 添加设备方向事件监听器
-  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-    // iOS 13+ 需要请求权限
-    DeviceOrientationEvent.requestPermission()
-      .then(permissionState => {
-        if (permissionState === 'granted') {
-          window.addEventListener('deviceorientation', handleOrientation);
-        }
-      })
-      .catch(console.error);
-  } else {
-    // 其他设备直接监听事件
-    window.addEventListener('deviceorientation', handleOrientation);
+  // 添加设备方向事件监听器（仅用于移动端）
+  if (typeof DeviceOrientationEvent !== 'undefined') {
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      // iOS 13+ 需要请求权限
+      DeviceOrientationEvent.requestPermission()
+        .then(permissionState => {
+          if (permissionState === 'granted') {
+            window.addEventListener('deviceorientation', handleOrientation);
+          }
+        })
+        .catch(console.error);
+    } else {
+      // 其他设备直接监听事件
+      window.addEventListener('deviceorientation', handleOrientation);
+    }
   }
 }
 
@@ -137,7 +139,21 @@ function draw() {
   }
 }
 
+function keyPressed() {
+  // 保留原有的键盘控制功能
+  if (keyCode === LEFT_ARROW) {
+    gravityDirection = { x: -1, y: 0 };
+  } else if (keyCode === RIGHT_ARROW) {
+    gravityDirection = { x: 1, y: 0 };
+  } else if (keyCode === UP_ARROW) {
+    gravityDirection = { x: 0, y: -1 };
+  } else if (keyCode === DOWN_ARROW) {
+    gravityDirection = { x: 0, y: 1 };
+  }
+}
+
 function mousePressed() {
+  // 保留原有的鼠标点击功能
   if (reset == 0) {
     stopped = !stopped;
     if (stopped) {
