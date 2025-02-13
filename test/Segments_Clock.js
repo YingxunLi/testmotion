@@ -37,10 +37,9 @@ const cfPass = { group: -1, category: 0x0001, mask: 0x0000 }
 function setup() {
   const canvas = createCanvas(960, 960);
 
-  engine.gravity.y = 0;
-
   engine = Engine.create();
   world = engine.world;
+  engine.gravity.y = 0;
 
   ground = new BlockCore(
     world,
