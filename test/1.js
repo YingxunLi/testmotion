@@ -122,6 +122,11 @@ function draw() {
             Matter.Body.setPosition(body, body.plugin.lastPos);
             Matter.Body.setStatic(body, true);
             Matter.Body.setAngle(body, 0);
+
+
+            Matter.Body.setAngularVelocity(body, 0);  // **防止继续旋转**
+
+            
             body.collisionFilter = cfHit;
           }
         }
@@ -179,9 +184,9 @@ function createDigit(d, z) {
     const magnet = new Magnet(
       world,
       {
-        x: clone.body.position.x, y: clone.body.position.y, r: 10,
+        x: clone.body.position.x, y: clone.body.position.y, r: 20,
         color: 'blue',
-        attraction: 0.6e-4
+        attraction: 1.6e-4
       },
       { isStatic: true, isSensor: true });
     magnet.addAttracted(clone.body);

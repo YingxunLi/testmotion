@@ -181,7 +181,7 @@ function createDigit(d, z) {
       {
         x: clone.body.position.x, y: clone.body.position.y, r: 10,
         color: 'blue',
-        attraction: 0.8e-4 // 增加吸引力
+        attraction: 0.6e-4
       },
       { isStatic: true, isSensor: true });
     magnet.addAttracted(clone.body);
@@ -217,7 +217,7 @@ function keyPressed() {
 }
 
 function mousePressed() {
-  if (reset === 0) {
+  if (reset == 0) {
     stopped = !stopped;
     if (stopped) {
       // 暂停时，记录碎片位置并设置为非静态
