@@ -47,7 +47,7 @@ function setup() {
 
   // 加载 SVG 数字部件
   new BlocksFromSVG(world, 'Segments_Ziffern.svg', [],
-    { isStatic: true, restitution: 0.7, friction: 0.0, frictionAir: 0.005 },
+    { isStatic: true, restitution: 0.7, friction: 0.0, frictionAir: 0.002 },
     {
       save: false, sample: 10, offset: { x: 0, y: 0 }, done: (added, time, fromCache) => {
         for (let id in added) {
@@ -113,7 +113,7 @@ function draw() {
     // 这里可以动态调整速度，比如加速到 2 倍
     engine.timing.timeScale = 2.0;
 
-    
+
   if (!stopped) {
     if (reset > 0) {
       magnets.forEach(list => list.forEach(magnet => {
