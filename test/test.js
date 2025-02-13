@@ -12,129 +12,74 @@ let time = [];
 let ground;
 let walls = [];
 let mouse;
-let gravityDirection = { x: 0, y: 0.3 }; // 默认重力方向向下
+let gravityDirection = { x: 0, y: 0.3 }; // Default gravity pointing down
 let stopped = false;
 let reset = 0;
 let magnets = [];
-let showColon = true; // 控制是否显示冒号
 
-// 碰撞过滤器配置
-const cfHit = { group: 0, category: 0x0001, mask: 0xFFFFFFFF };
-const cfPass = { group: -1, category: 0x0001, mask: 0x0000 };
+// collisionFilter: {group: 0x00, category: 0b0000 0000 0000 0001, mask: 0b1111 1111 1111 1111}
+// collision of A and B: group > 0 && groupA == groupB          ,
+// no collision of A and B: group < 0 && groupA == groupB
+// groupA != groupB: 
+// collision of A and B ? (categoryA & maskB) !== 0 && (categoryB & maskA) !== 0
+const cfHit = { group: 0, category: 0x0001, mask: 0xFFFFFFFF }
+const cfPass = { group: -1, category: 0x0001, mask: 0x0000 }
 
 function setup() {
   const canvas = createCanvas(960, 960);
 
   engine = Engine.create();
   world = engine.world;
-  engine.gravity.y = 0; // 初始重力设置为 0
+  
+  engine.gravity.y = 0;
 
-  // 创建地面
   ground = new BlockCore(
     world,
     { x: 400, y: height + 10, w: width, h: 20, color: 'white' },
     { isStatic: true }
   );
 
-  // 创建墙壁
-  walls.push(new BlockCore(world, { x: -30, y: height / 2, w: 60, h: height, color: 'black' }, { isStatic: true })); // 左墙
-  walls.push(new BlockCore(world, { x: width + 30, y: height / 2, w: 60, h: height, color: 'black' }, { isStatic: true })); // 右墙
-  walls.push(new BlockCore(world, { x: width / 2, y: -30, w: width, h: 60, color: 'black' }, { isStatic: true })); // 上墙
-  walls.push(new BlockCore(world, { x: width / 2, y: height + 30, w: width, h: 60, color: 'black' }, { isStatic: true })); // 下墙
-
-  // 初始化鼠标交互
+  // Add walls
+  // Aktualisierte Wände mit dreifacher Dicke
+walls.push(new BlockCore(world, { x: -30, y: height / 2, w: 60, h: height, color: 'black' }, { isStatic: true })); // Linke Wand
+walls.push(new BlockCore(world, { x: width + 30, y: height / 2, w: 60, h: height, color: 'black' }, { isStatic: true })); // Rechte Wand
+walls.push(new BlockCore(world, { x: width / 2, y: -30, w: width, h: 60, color: 'black' }, { isStatic: true })); // Obere Wand
+walls.push(new BlockCore(world, { x: width / 2, y: height + 30, w: width, h: 60, color: 'black' }, { isStatic: true })); // Untere Wand
   mouse = new Mouse(engine, canvas, { stroke: 'white', strokeWeight: 2 });
 
-  // 从 SVG 加载数字部件
+  // Die Ziffern werden 1x geladen werden und später durch kopieren verwendet
+  // "save: true" speichert die Daten im Browser
+  // wenn das SVG geändert wird, muss es 1x auf "save: false" gesetzt werden !!!
   new BlocksFromSVG(world, 'Segments_Ziffern.svg', [],
     { isStatic: true, restitution: 0.7, friction: 0.0, frictionAir: 0.0 },
     {
       save: false, sample: 10, offset: { x: 0, y: 0 }, done: (added, time, fromCache) => {
-        console.log('FRAME', added, time, fromCache);
+        console.log('FRAME', added, time, fromCache)
         for (let id in added) {
-          const idx = id.substring(3, 4);
-          added[id].attributes.stroke = 'rgb(0,79,79)'; // 设置描边颜色
+          const idx = id.substring(3, 4)
+          added[id].attributes.stroke = 'rgb(0,79,79)'; // Neue Stroke-Farbe
           if (added[id].body) {
             if (!ziffernParts[idx]) {
               ziffernParts[idx] = [added[id]];
             } else {
               ziffernParts[idx].push(added[id]);
             }
-            World.remove(world, added[id].body);
-            added[id].attributes.color = 'rgb(0,79,79)'; // 设置填充颜色
+            World.remove(world, added[id].body)
+            added[id].attributes.color = 'rgb(0,79,79)'; // Neue Part-Farbe
           } else {
-            console.log('Ziffern Teil ' + id + ' ist fehlerhaft');
+            console.log('Ziffern Teil ' + id + ' ist fehlerhaft')
           }
         }
       }
     });
 
-  // 添加设备方向事件监听器
-  if (window.DeviceOrientationEvent) {
-    window.addEventListener('deviceorientation', handleOrientation);
-  } else {
-    console.log("DeviceOrientationEvent is not supported");
-  }
 
   Runner.run(engine);
 }
 
-// 处理设备方向事件
-function handleOrientation(event) {
-  const beta = event.beta;  // 设备前后倾斜角度（-180 到 180）
-  const gamma = event.gamma; // 设备左右倾斜角度（-90 到 90）
-
-  // 将设备倾斜角度映射到重力方向
-  gravityDirection.x = map(gamma, -90, 90, -1, 1);
-  gravityDirection.y = map(beta, -180, 180, -1, 1);
-}
-
-// 创建数字
-function createDigit(d, z) {
-  magnets[d] = [];
-  const offsetX = (d === 2 || d === 3) ? 90 : 0; // 分钟数字的偏移
-
-  ziffernParts[z].forEach(part => {
-    const clone = new PolygonFromSVG(world,
-      {
-        ...part.attributes, color: 'rgb(0,79,79)',
-        fromVertices: part.attributes.fromVertices.map(v => ({ x: v.x + d * 200 + 20 + offsetX, y: v.y + 300 }))
-      },
-      { ...part.options, label: 'D' + d + z });
-    digits.push(clone);
-
-    const magnet = new Magnet(
-      world,
-      {
-        x: clone.body.position.x, y: clone.body.position.y, r: 10,
-        color: 'blue',
-        attraction: 0.6e-4
-      },
-      { isStatic: true, isSensor: true });
-    magnet.addAttracted(clone.body);
-    magnets[d].push(magnet);
-  });
-}
-
-// 移除数字
-function removeDigit(d, z) {
-  if (z != undefined) {
-    digits = digits.filter(part => {
-      if (part.body.label == 'D' + d + z) {
-        World.remove(world, part.body);
-        return false;
-      }
-      return true;
-    });
-    magnets[d].forEach(magnet => World.remove(world, magnet.body));
-    magnets[d] = [];
-  }
-}
-
-// 更新时钟
 function clock() {
   if (ziffernParts.length == 10) {
-    let actTime = [Math.floor(hour() / 10), hour() % 10, Math.floor(minute() / 10), minute() % 10];
+    let actTime = [Math.floor(hour() / 10), hour() % 10, Math.floor(minute() / 10), minute() % 10]
     for (let d = 0; d < 4; d++) {
       if (actTime[d] != time[d]) {
         removeDigit(d, time[d]);
@@ -145,49 +90,49 @@ function clock() {
   }
 }
 
-function draw() {
-  background(0);
+function createDigit(d, z) {
+  magnets[d] = [];
+  // Verschiebung für die Minuten (rechte Seite)
+  const offsetX = (d === 2 || d === 3) ? 90 : 0;
 
-  // 根据重力方向更新物理世界
-  engine.world.gravity.x = gravityDirection.x;
-  engine.world.gravity.y = gravityDirection.y;
+  ziffernParts[z].forEach(part => {
+    const clone = new PolygonFromSVG(world,
+      {
+        ...part.attributes, color: 'rgb(0,79,79)',
+        fromVertices: part.attributes.fromVertices.map(v => ({ x: v.x + d * 200 + 20 + offsetX, y: v.y + 300 }))
+      },
+      { ...part.options, label: 'D' + d + z })
+    digits.push(clone);
+    
+    const magnet = new Magnet(
+      world,
+      {
+        x: clone.body.position.x, y: clone.body.position.y, r: 10,
+        color: 'blue',
+        attraction: 0.6e-4
+      },
+      { isStatic: true, isSensor: true })
+    magnet.addAttracted(clone.body);
+    magnets[d].push(magnet);
+  });
+}
 
-  if (!stopped) {
-    if (reset > 0) {
-      magnets.forEach(list => list.forEach(magnet => {
-        const body = magnet.attracted[0];
-        if (!body.isStatic) {
-          magnet.attract();
-          const d = dist(magnet.body.position.x, magnet.body.position.y, body.position.x, body.position.y);
-          if (d < 100) {
-            reset--;
-            Matter.Body.setPosition(body, body.plugin.lastPos);
-            Matter.Body.setStatic(body, true);
-            Matter.Body.setAngle(body, 0);
-          }
-        }
-      }));
-    } else {
-      clock();
-    }
-  }
 
-  // 绘制所有元素
-  digits.forEach(part => part.draw());
-  ground.draw();
-  walls.forEach(wall => wall.draw());
-  mouse.draw();
 
-  // 绘制冒号
-  if (showColon) {
-    fill(0, 79, 79);
-    noStroke();
-    ellipse(440, 350, 45, 45);
-    ellipse(440, 450, 45, 45);
+function removeDigit(d, z) {
+  if (z != undefined) {
+    digits = digits.filter(part => {
+      if (part.body.label == 'D' + d + z) {
+        World.remove(world, part.body);
+        return false;
+      }
+      return true;
+    })
+    magnets[d].forEach(magnet => World.remove(world, magnet.body));
+    magnets[d] = [];
   }
 }
 
-// 键盘事件：调整重力方向
 function keyPressed() {
   if (keyCode === LEFT_ARROW) {
     gravityDirection = { x: -1, y: 0 };
@@ -200,7 +145,93 @@ function keyPressed() {
   }
 }
 
-// 鼠标事件：暂停/恢复和切换冒号显示
+function mousePressed() {
+  if (reset == 0) {
+    stopped = !stopped;
+    if (stopped) {
+      digits.forEach(part => {
+        part.body.plugin.lastPos = { x: part.body.position.x, y: part.body.position.y };
+        Body.setStatic(part.body, false)
+      });
+    } else {
+      reset = digits.length;
+    }
+  }
+}
+
+let showColon = true; // Variable zur Steuerung des Doppelpunkts
+
+function updateCollisionFilter(body, enableCollision) {
+  if (enableCollision) {
+    body.collisionFilter = { ...cfHit, mask: 0xFFFFFFFF }; // Standard-Kollision
+  } else {
+    body.collisionFilter = { ...cfHit, mask: 0x0001 }; // Nur Kollision mit Wänden
+  }
+}
+
+function draw() {
+  background(0);
+
+  if (!stopped) {
+    if (reset > 0) {
+      magnets.forEach(list => list.forEach(magnet => {
+        const body = magnet.attracted[0];
+        if (!body.isStatic) {
+          updateCollisionFilter(body, false);
+          
+          magnet.attract();
+          const d = dist(magnet.body.position.x, magnet.body.position.y, body.position.x, body.position.y);
+          if (d < 60) {
+            reset--;
+            Matter.Body.setPosition(body, body.plugin.lastPos);
+            Matter.Body.setStatic(body, true);
+            Matter.Body.setAngle(body, 0);
+            
+            updateCollisionFilter(body, true);
+          }
+        }
+      }));
+    } else {
+      clock();
+    }
+  }
+
+  digits.forEach(part => part.draw());
+  ground.draw();
+  walls.forEach(wall => wall.draw());
+  mouse.draw();
+
+  engine.world.gravity.x = gravityDirection.x;
+  engine.world.gravity.y = gravityDirection.y;
+  
+  if (showColon) {
+    fill(0, 79, 79);
+    noStroke();
+    ellipse(440, 350, 45, 45);
+    ellipse(440, 450, 45, 45);
+  }
+}
+
+
+
+  digits.forEach(part => part.draw());
+  ground.draw();
+  walls.forEach(wall => wall.draw());
+  mouse.draw();
+
+  // Update gravity based on current direction
+  engine.world.gravity.x = gravityDirection.x;
+  engine.world.gravity.y = gravityDirection.y;
+  
+  // Zeichne den Doppelpunkt
+  if (showColon) {
+    fill('red');
+    noStroke();
+    ellipse(440, 350, 45, 45);
+    ellipse(440, 450, 45, 45);
+  }
+
+
 function mousePressed() {
   if (reset == 0) {
     stopped = !stopped;
@@ -212,6 +243,8 @@ function mousePressed() {
     } else {
       reset = digits.length;
     }
-    showColon = !showColon; // 切换冒号显示
+    
+    // Umschalten des Doppelpunkts
+    showColon = !showColon;
   }
 }
