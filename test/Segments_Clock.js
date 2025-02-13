@@ -30,15 +30,12 @@ function setup() {
 
   engine = Engine.create();
   world = engine.world;
-
   
   engine.gravity.y = 0;
 
-
-
   ground = new BlockCore(
     world,
-    { x: 400, y: height + 10, w: width, h: 20, color: 'blue' },
+    { x: 400, y: height + 10, w: width, h: 20, color: 'white' },
     { isStatic: true }
   );
 
@@ -60,7 +57,7 @@ walls.push(new BlockCore(world, { x: width / 2, y: height + 30, w: width, h: 60,
         console.log('FRAME', added, time, fromCache)
         for (let id in added) {
           const idx = id.substring(3, 4)
-          added[id].attributes.stroke = 'white'; // Neue Stroke-Farbe
+          added[id].attributes.stroke = 'rgb(0,79,79)'; // Neue Stroke-Farbe
           if (added[id].body) {
             if (!ziffernParts[idx]) {
               ziffernParts[idx] = [added[id]];
@@ -68,7 +65,7 @@ walls.push(new BlockCore(world, { x: width / 2, y: height + 30, w: width, h: 60,
               ziffernParts[idx].push(added[id]);
             }
             World.remove(world, added[id].body)
-            added[id].attributes.color = 'white'; // Neue Part-Farbe
+            added[id].attributes.color = 'rgb(0,79,79)'; // Neue Part-Farbe
           } else {
             console.log('Ziffern Teil ' + id + ' ist fehlerhaft')
           }
