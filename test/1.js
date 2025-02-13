@@ -28,6 +28,7 @@ function setup() {
   world = engine.world;
   engine.gravity.y = 0;
 
+  
   // 创建地面
   ground = new BlockCore(
     world,
@@ -109,6 +110,10 @@ function draw() {
   engine.world.gravity.x = gravityDirection.x;
   engine.world.gravity.y = gravityDirection.y;
 
+    // 这里可以动态调整速度，比如加速到 2 倍
+    engine.timing.timeScale = 2.0;
+
+    
   if (!stopped) {
     if (reset > 0) {
       magnets.forEach(list => list.forEach(magnet => {
