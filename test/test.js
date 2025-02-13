@@ -172,6 +172,9 @@ function updateCollisionFilter(body, enableCollision) {
 function draw() {
   background(0);
 
+  engine.world.gravity.x = gravityDirection.x;
+  engine.world.gravity.y = gravityDirection.y;
+  
   if (!stopped) {
     if (reset > 0) {
       magnets.forEach(list => list.forEach(magnet => {
@@ -201,8 +204,7 @@ function draw() {
   walls.forEach(wall => wall.draw());
   mouse.draw();
 
-  engine.world.gravity.x = gravityDirection.x;
-  engine.world.gravity.y = gravityDirection.y;
+
   
   if (showColon) {
     fill(0, 79, 79);
