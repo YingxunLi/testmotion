@@ -68,7 +68,7 @@ walls.push(new BlockCore(world, { x: width / 2, y: height + 30, w: width, h: 60,
               ziffernParts[idx].push(added[id]);
             }
             World.remove(world, added[id].body)
-            added[id].attributes.color = 'rgb(0,79,79)'; // Neue Part-Farbe
+            added[id].attributes.color = 'white'; // Neue Part-Farbe
           } else {
             console.log('Ziffern Teil ' + id + ' ist fehlerhaft')
           }
