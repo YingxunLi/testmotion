@@ -12,7 +12,7 @@ let time = [];
 let ground;
 let walls = [];
 let mouse;
-let gravityDirection = { x: 0, y: 0.3 }; // Default gravity pointing down
+let gravityDirection = { x: 0, y: 0.3 }; // 默认重力方向向下
 let stopped = false;
 let reset = 0;
 let magnets = [];
@@ -64,80 +64,40 @@ function setup() {
 
   Runner.run(engine);
 
-  // Add event listener for device orientation
-  if (window.DeviceOrientationEvent) {
-    window.addEventListener('deviceorientation', handleOrientation);
+  // 添加设备方向事件监听器
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    // iOS 13+ 需要请求权限
+    DeviceOrientationEvent.requestPermission()
+      .then(permissionState => {
+        if (permissionState === 'granted') {
+          window.addEventListener('deviceorientation', handleOrientation);
+        }
+      })
+      .catch(console.error);
   } else {
-    console.log("Device orientation not supported");
+    // 其他设备直接监听事件
+    window.addEventListener('deviceorientation', handleOrientation);
   }
 }
 
 function handleOrientation(event) {
-  const beta = event.beta; // In degree in the range [-180,180]
-  const gamma = event.gamma; // In degree in the range [-90,90]
+  // 获取设备的倾斜数据
+  const beta = event.beta; // 前后倾斜（-180 到 180）
+  const gamma = event.gamma; // 左右倾斜（-90 到 90）
 
-  // Adjust gravity based on device orientation
-  gravityDirection.x = gamma / 90; // Normalize to [-1, 1]
-  gravityDirection.y = beta / 90; // Normalize to [-1, 1]
-}
+  // 将倾斜数据映射到重力方向
+  gravityDirection.x = gamma / 90; // 左右倾斜控制 x 方向重力
+  gravityDirection.y = beta / 90; // 前后倾斜控制 y 方向重力
 
-function clock() {
-  if (ziffernParts.length == 10) {
-    let actTime = [Math.floor(hour() / 10), hour() % 10, Math.floor(minute() / 10), minute() % 10];
-    for (let d = 0; d < 4; d++) {
-      if (actTime[d] != time[d]) {
-        removeDigit(d, time[d]);
-        createDigit(d, actTime[d]);
-      }
-    }
-    time = actTime;
-  }
-}
-
-function createDigit(d, z) {
-  magnets[d] = [];
-  const offsetX = (d === 2 || d === 3) ? 90 : 0;
-
-  ziffernParts[z].forEach(part => {
-    const clone = new PolygonFromSVG(world,
-      {
-        ...part.attributes, color: 'rgb(0,79,79)',
-        fromVertices: part.attributes.fromVertices.map(v => ({ x: v.x + d * 200 + 20 + offsetX, y: v.y + 300 }))
-      },
-      { ...part.options, label: 'D' + d + z });
-    digits.push(clone);
-
-    const magnet = new Magnet(
-      world,
-      {
-        x: clone.body.position.x, y: clone.body.position.y, r: 10,
-        color: 'blue',
-        attraction: 0.6e-4
-      },
-      { isStatic: true, isSensor: true });
-    magnet.addAttracted(clone.body);
-    magnets[d].push(magnet);
-  });
-}
-
-function removeDigit(d, z) {
-  if (z != undefined) {
-    digits = digits.filter(part => {
-      if (part.body.label == 'D' + d + z) {
-        World.remove(world, part.body);
-        return false;
-      }
-      return true;
-    });
-    magnets[d].forEach(magnet => World.remove(world, magnet.body));
-    magnets[d] = [];
-  }
+  // 限制重力方向的范围
+  gravityDirection.x = Math.min(Math.max(gravityDirection.x, -1), 1);
+  gravityDirection.y = Math.min(Math.max(gravityDirection.y, -1), 1);
 }
 
 function draw() {
   background(0);
 
-  // Update gravity based on current direction
+  // 更新重力方向
   engine.world.gravity.x = gravityDirection.x;
   engine.world.gravity.y = gravityDirection.y;
 
@@ -168,7 +128,7 @@ function draw() {
   walls.forEach(wall => wall.draw());
   mouse.draw();
 
-  // Draw colon
+  // 绘制冒号
   if (showColon) {
     fill(0, 79, 79);
     noStroke();
