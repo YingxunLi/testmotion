@@ -31,7 +31,10 @@ function setup() {
   engine = Engine.create();
   world = engine.world;
 
+  
   engine.gravity.y = 0;
+
+
 
   ground = new BlockCore(
     world,
@@ -40,13 +43,16 @@ function setup() {
   );
 
   // Add walls
-  walls.push(new BlockCore(world, { x: -30, y: height / 2, w: 60, h: height, color: 'black' }, { isStatic: true })); // Linke Wand
-  walls.push(new BlockCore(world, { x: width + 30, y: height / 2, w: 60, h: height, color: 'black' }, { isStatic: true })); // Rechte Wand
-  walls.push(new BlockCore(world, { x: width / 2, y: -30, w: width, h: 60, color: 'black' }, { isStatic: true })); // Obere Wand
-  walls.push(new BlockCore(world, { x: width / 2, y: height + 30, w: width, h: 60, color: 'black' }, { isStatic: true })); // Untere Wand
-
+  // Aktualisierte Wände mit dreifacher Dicke
+walls.push(new BlockCore(world, { x: -30, y: height / 2, w: 60, h: height, color: 'black' }, { isStatic: true })); // Linke Wand
+walls.push(new BlockCore(world, { x: width + 30, y: height / 2, w: 60, h: height, color: 'black' }, { isStatic: true })); // Rechte Wand
+walls.push(new BlockCore(world, { x: width / 2, y: -30, w: width, h: 60, color: 'black' }, { isStatic: true })); // Obere Wand
+walls.push(new BlockCore(world, { x: width / 2, y: height + 30, w: width, h: 60, color: 'black' }, { isStatic: true })); // Untere Wand
   mouse = new Mouse(engine, canvas, { stroke: 'white', strokeWeight: 2 });
 
+  // Die Ziffern werden 1x geladen werden und später durch kopieren verwendet
+  // "save: true" speichert die Daten im Browser
+  // wenn das SVG geändert wird, muss es 1x auf "save: false" gesetzt werden !!!
   new BlocksFromSVG(world, 'Segments_Ziffern.svg', [],
     { isStatic: true, restitution: 0.7, friction: 0.0, frictionAir: 0.0 },
     {
@@ -70,6 +76,7 @@ function setup() {
       }
     });
 
+
   Runner.run(engine);
 }
 
@@ -88,6 +95,7 @@ function clock() {
 
 function createDigit(d, z) {
   magnets[d] = [];
+  // Verschiebung für die Minuten (rechte Seite)
   const offsetX = (d === 2 || d === 3) ? 90 : 0;
 
   ziffernParts[z].forEach(part => {
@@ -112,6 +120,8 @@ function createDigit(d, z) {
   });
 }
 
+
+
 function removeDigit(d, z) {
   if (z != undefined) {
     digits = digits.filter(part => {
@@ -128,25 +138,10 @@ function removeDigit(d, z) {
 
 function draw() {
   background(0);
-
-  // Update gravity based on mouse position
-  let centerX = width / 2;
-  let centerY = height / 2;
-  let mouseX = mouseX;
-  let mouseY = mouseY;
-
-  let dx = mouseX - centerX;
-  let dy = mouseY - centerY;
-  let distance = Math.sqrt(dx * dx + dy * dy);
-
-  if (distance > 0) {
-    gravityDirection.x = (dx / distance) * 0.3;
-    gravityDirection.y = (dy / distance) * 0.3;
-  }
-
+  // Update gravity based on current direction
   engine.world.gravity.x = gravityDirection.x;
   engine.world.gravity.y = gravityDirection.y;
-
+  
   if (!stopped) {
     if (reset > 0) {
       magnets.forEach(list => list.forEach(magnet => {
@@ -159,6 +154,82 @@ function draw() {
             Matter.Body.setPosition(body, body.plugin.lastPos);
             Matter.Body.setStatic(body, true);
             Matter.Body.setAngle(body, 0);
+            // body.collisionFilter = cfHit;
+          }
+        } else {
+          // body.collisionFilter = cfPass;
+        }
+      }));
+    } else {
+      clock();
+    }
+  }
+  digits.forEach(part => part.draw());
+  // magnets.forEach(list => list.forEach(magnet => magnet.draw()));
+  ground.draw();
+  walls.forEach(wall => wall.draw());
+
+  mouse.draw();
+
+
+
+}
+
+function keyPressed() {
+  if (keyCode === LEFT_ARROW) {
+    gravityDirection = { x: -1, y: 0 };
+  } else if (keyCode === RIGHT_ARROW) {
+    gravityDirection = { x: 1, y: 0 };
+  } else if (keyCode === UP_ARROW) {
+    gravityDirection = { x: 0, y: -1 };
+  } else if (keyCode === DOWN_ARROW) {
+    gravityDirection = { x: 0, y: 1 };
+  }
+}
+
+function mousePressed() {
+  if (reset == 0) {
+    stopped = !stopped;
+    if (stopped) {
+      digits.forEach(part => {
+        part.body.plugin.lastPos = { x: part.body.position.x, y: part.body.position.y };
+        Body.setStatic(part.body, false)
+      });
+    } else {
+      reset = digits.length;
+    }
+  }
+}
+
+let showColon = true; // Variable zur Steuerung des Doppelpunkts
+
+function draw() {
+  background(0);
+
+
+    // apply rotation of device to gravity
+    engine.gravity.x = (rotationY / 2 - engine.gravity.x) * 0.5;
+    engine.gravity.y = (rotationX / 2 - engine.gravity.y) * 0.5;
+    
+  
+  if (!stopped) {
+    if (reset > 0) {
+      magnets.forEach(list => list.forEach(magnet => {
+        const body = magnet.attracted[0];
+        if (!body.isStatic) {
+          // Deaktiviere die Kollision, solange der Magnet anzieht
+          body.collisionFilter = cfPass;
+          
+          magnet.attract();
+          const d = dist(magnet.body.position.x, magnet.body.position.y, body.position.x, body.position.y)
+          if (d < 60) {
+            reset--;
+            Matter.Body.setPosition(body, body.plugin.lastPos);
+            Matter.Body.setStatic(body, true);
+            Matter.Body.setAngle(body, 0);
+            
+            // Reaktiviere die Kollision, sobald das Teil am Platz ist
+            body.collisionFilter = cfHit;
           }
         }
       }));
@@ -172,6 +243,10 @@ function draw() {
   walls.forEach(wall => wall.draw());
   mouse.draw();
 
+  // Update gravity based on current direction
+  engine.world.gravity.x = gravityDirection.x;
+  engine.world.gravity.y = gravityDirection.y;
+  
   // Zeichne den Doppelpunkt
   if (showColon) {
     fill(0,79,79);
@@ -180,6 +255,25 @@ function draw() {
     ellipse(440, 450, 45, 45);
   }
 }
+
+
+  digits.forEach(part => part.draw());
+  ground.draw();
+  walls.forEach(wall => wall.draw());
+  mouse.draw();
+
+  // Update gravity based on current direction
+  engine.world.gravity.x = gravityDirection.x;
+  engine.world.gravity.y = gravityDirection.y;
+  
+  // Zeichne den Doppelpunkt
+  if (showColon) {
+    fill(255);
+    noStroke();
+    ellipse(440, 350, 45, 45);
+    ellipse(440, 450, 45, 45);
+  }
+
 
 function mousePressed() {
   if (reset == 0) {
@@ -197,5 +291,3 @@ function mousePressed() {
     showColon = !showColon;
   }
 }
-
-let showColon = true; // Variable zur Steuerung des Doppelpunkts
