@@ -111,7 +111,7 @@ function draw() {
   engine.world.gravity.y = gravityDirection.y;
 
     // 这里可以动态调整速度，比如加速到 2 倍
-    engine.timing.timeScale = 2.0;
+    engine.timing.timeScale = 1.2;
 
 
   if (!stopped) {
