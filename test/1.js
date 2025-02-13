@@ -16,6 +16,7 @@ let gravityDirection = { x: 0, y: 0.3 }; // 默认重力方向向下
 let stopped = false;
 let reset = 0;
 let magnets = [];
+let showColon = true; // 控制冒号显示
 
 const cfHit = { group: 0, category: 0x0001, mask: 0xFFFFFFFF };
 const cfPass = { group: -1, category: 0x0001, mask: 0x0000 };
@@ -27,19 +28,23 @@ function setup() {
   world = engine.world;
   engine.gravity.y = 0;
 
+  // 创建地面
   ground = new BlockCore(
     world,
     { x: 400, y: height + 10, w: width, h: 20, color: 'white' },
     { isStatic: true }
   );
 
+  // 创建墙壁
   walls.push(new BlockCore(world, { x: -30, y: height / 2, w: 60, h: height, color: 'black' }, { isStatic: true }));
   walls.push(new BlockCore(world, { x: width + 30, y: height / 2, w: 60, h: height, color: 'black' }, { isStatic: true }));
   walls.push(new BlockCore(world, { x: width / 2, y: -30, w: width, h: 60, color: 'black' }, { isStatic: true }));
   walls.push(new BlockCore(world, { x: width / 2, y: height + 30, w: width, h: 60, color: 'black' }, { isStatic: true }));
 
+  // 初始化鼠标交互
   mouse = new Mouse(engine, canvas, { stroke: 'white', strokeWeight: 2 });
 
+  // 加载 SVG 数字部件
   new BlocksFromSVG(world, 'Segments_Ziffern.svg', [],
     { isStatic: true, restitution: 0.7, friction: 0.0, frictionAir: 0.0 },
     {
@@ -62,6 +67,7 @@ function setup() {
       }
     });
 
+  // 启动 Matter.js 引擎
   Runner.run(engine);
 
   // 添加设备方向事件监听器（仅用于移动端）
@@ -125,9 +131,14 @@ function draw() {
     }
   }
 
+  // 绘制所有数字部件
   digits.forEach(part => part.draw());
+
+  // 绘制地面和墙壁
   ground.draw();
   walls.forEach(wall => wall.draw());
+
+  // 绘制鼠标交互
   mouse.draw();
 
   // 绘制冒号
@@ -136,6 +147,59 @@ function draw() {
     noStroke();
     ellipse(440, 350, 45, 45);
     ellipse(440, 450, 45, 45);
+  }
+}
+
+function clock() {
+  if (ziffernParts.length == 10) {
+    let actTime = [Math.floor(hour() / 10), hour() % 10, Math.floor(minute() / 10), minute() % 10];
+    for (let d = 0; d < 4; d++) {
+      if (actTime[d] != time[d]) {
+        removeDigit(d, time[d]);
+        createDigit(d, actTime[d]);
+      }
+    }
+    time = actTime;
+  }
+}
+
+function createDigit(d, z) {
+  magnets[d] = [];
+  const offsetX = (d === 2 || d === 3) ? 90 : 0;
+
+  ziffernParts[z].forEach(part => {
+    const clone = new PolygonFromSVG(world,
+      {
+        ...part.attributes, color: 'rgb(0,79,79)',
+        fromVertices: part.attributes.fromVertices.map(v => ({ x: v.x + d * 200 + 20 + offsetX, y: v.y + 300 }))
+      },
+      { ...part.options, label: 'D' + d + z });
+    digits.push(clone);
+
+    const magnet = new Magnet(
+      world,
+      {
+        x: clone.body.position.x, y: clone.body.position.y, r: 10,
+        color: 'blue',
+        attraction: 0.6e-4
+      },
+      { isStatic: true, isSensor: true });
+    magnet.addAttracted(clone.body);
+    magnets[d].push(magnet);
+  });
+}
+
+function removeDigit(d, z) {
+  if (z != undefined) {
+    digits = digits.filter(part => {
+      if (part.body.label == 'D' + d + z) {
+        World.remove(world, part.body);
+        return false;
+      }
+      return true;
+    });
+    magnets[d].forEach(magnet => World.remove(world, magnet.body));
+    magnets[d] = [];
   }
 }
 
