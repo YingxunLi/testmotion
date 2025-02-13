@@ -31,7 +31,10 @@ function setup() {
   engine = Engine.create();
   world = engine.world;
 
+  
   engine.gravity.y = 0;
+
+
 
   ground = new BlockCore(
     world,
@@ -41,10 +44,10 @@ function setup() {
 
   // Add walls
   // Aktualisierte Wände mit dreifacher Dicke
-  walls.push(new BlockCore(world, { x: -30, y: height / 2, w: 60, h: height, color: 'black' }, { isStatic: true })); // Linke Wand
-  walls.push(new BlockCore(world, { x: width + 30, y: height / 2, w: 60, h: height, color: 'black' }, { isStatic: true })); // Rechte Wand
-  walls.push(new BlockCore(world, { x: width / 2, y: -30, w: width, h: 60, color: 'black' }, { isStatic: true })); // Obere Wand
-  walls.push(new BlockCore(world, { x: width / 2, y: height + 30, w: width, h: 60, color: 'black' }, { isStatic: true })); // Untere Wand
+walls.push(new BlockCore(world, { x: -30, y: height / 2, w: 60, h: height, color: 'black' }, { isStatic: true })); // Linke Wand
+walls.push(new BlockCore(world, { x: width + 30, y: height / 2, w: 60, h: height, color: 'black' }, { isStatic: true })); // Rechte Wand
+walls.push(new BlockCore(world, { x: width / 2, y: -30, w: width, h: 60, color: 'black' }, { isStatic: true })); // Obere Wand
+walls.push(new BlockCore(world, { x: width / 2, y: height + 30, w: width, h: 60, color: 'black' }, { isStatic: true })); // Untere Wand
   mouse = new Mouse(engine, canvas, { stroke: 'white', strokeWeight: 2 });
 
   // Die Ziffern werden 1x geladen werden und später durch kopieren verwendet
@@ -72,6 +75,7 @@ function setup() {
         }
       }
     });
+
 
   Runner.run(engine);
 }
@@ -102,7 +106,7 @@ function createDigit(d, z) {
       },
       { ...part.options, label: 'D' + d + z })
     digits.push(clone);
-
+    
     const magnet = new Magnet(
       world,
       {
@@ -115,6 +119,8 @@ function createDigit(d, z) {
     magnets[d].push(magnet);
   });
 }
+
+
 
 function removeDigit(d, z) {
   if (z != undefined) {
@@ -135,7 +141,7 @@ function draw() {
   // Update gravity based on current direction
   engine.world.gravity.x = gravityDirection.x;
   engine.world.gravity.y = gravityDirection.y;
-
+  
   if (!stopped) {
     if (reset > 0) {
       magnets.forEach(list => list.forEach(magnet => {
@@ -164,25 +170,21 @@ function draw() {
   walls.forEach(wall => wall.draw());
 
   mouse.draw();
+
+
+
 }
 
-function mouseMoved() {
-  // Calculate the direction vector from the center of the canvas to the mouse position
-  let centerX = width / 2;
-  let centerY = height / 2;
-  let dx = mouseX - centerX;
-  let dy = mouseY - centerY;
-
-  // Normalize the direction vector
-  let length = Math.sqrt(dx * dx + dy * dy);
-  if (length > 0) {
-    dx /= length;
-    dy /= length;
+function keyPressed() {
+  if (keyCode === LEFT_ARROW) {
+    gravityDirection = { x: -1, y: 0 };
+  } else if (keyCode === RIGHT_ARROW) {
+    gravityDirection = { x: 1, y: 0 };
+  } else if (keyCode === UP_ARROW) {
+    gravityDirection = { x: 0, y: -1 };
+  } else if (keyCode === DOWN_ARROW) {
+    gravityDirection = { x: 0, y: 1 };
   }
-
-  // Update gravity direction
-  gravityDirection.x = dx;
-  gravityDirection.y = dy;
 }
 
 function mousePressed() {
@@ -204,10 +206,12 @@ let showColon = true; // Variable zur Steuerung des Doppelpunkts
 function draw() {
   background(0);
 
-  // apply rotation of device to gravity
-  engine.gravity.x = (rotationY / 2 - engine.gravity.x) * 0.5;
-  engine.gravity.y = (rotationX / 2 - engine.gravity.y) * 0.5;
 
+    // apply rotation of device to gravity
+    engine.gravity.x = (rotationY / 2 - engine.gravity.x) * 0.5;
+    engine.gravity.y = (rotationX / 2 - engine.gravity.y) * 0.5;
+    
+  
   if (!stopped) {
     if (reset > 0) {
       magnets.forEach(list => list.forEach(magnet => {
@@ -215,7 +219,7 @@ function draw() {
         if (!body.isStatic) {
           // Deaktiviere die Kollision, solange der Magnet anzieht
           body.collisionFilter = cfPass;
-
+          
           magnet.attract();
           const d = dist(magnet.body.position.x, magnet.body.position.y, body.position.x, body.position.y)
           if (d < 60) {
@@ -223,7 +227,7 @@ function draw() {
             Matter.Body.setPosition(body, body.plugin.lastPos);
             Matter.Body.setStatic(body, true);
             Matter.Body.setAngle(body, 0);
-
+            
             // Reaktiviere die Kollision, sobald das Teil am Platz ist
             body.collisionFilter = cfHit;
           }
@@ -242,32 +246,34 @@ function draw() {
   // Update gravity based on current direction
   engine.world.gravity.x = gravityDirection.x;
   engine.world.gravity.y = gravityDirection.y;
-
+  
   // Zeichne den Doppelpunkt
   if (showColon) {
-    fill(0, 79, 79);
+    fill(0,79,79);
     noStroke();
     ellipse(440, 350, 45, 45);
     ellipse(440, 450, 45, 45);
   }
 }
 
-digits.forEach(part => part.draw());
-ground.draw();
-walls.forEach(wall => wall.draw());
-mouse.draw();
 
-// Update gravity based on current direction
-engine.world.gravity.x = gravityDirection.x;
-engine.world.gravity.y = gravityDirection.y;
+  digits.forEach(part => part.draw());
+  ground.draw();
+  walls.forEach(wall => wall.draw());
+  mouse.draw();
 
-// Zeichne den Doppelpunkt
-if (showColon) {
-  fill(255);
-  noStroke();
-  ellipse(440, 350, 45, 45);
-  ellipse(440, 450, 45, 45);
-}
+  // Update gravity based on current direction
+  engine.world.gravity.x = gravityDirection.x;
+  engine.world.gravity.y = gravityDirection.y;
+  
+  // Zeichne den Doppelpunkt
+  if (showColon) {
+    fill(255);
+    noStroke();
+    ellipse(440, 350, 45, 45);
+    ellipse(440, 450, 45, 45);
+  }
+
 
 function mousePressed() {
   if (reset == 0) {
@@ -280,7 +286,7 @@ function mousePressed() {
     } else {
       reset = digits.length;
     }
-
+    
     // Umschalten des Doppelpunkts
     showColon = !showColon;
   }
