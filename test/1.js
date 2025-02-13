@@ -46,7 +46,7 @@ function setup() {
 
   // 加载 SVG 数字部件
   new BlocksFromSVG(world, 'Segments_Ziffern.svg', [],
-    { isStatic: true, restitution: 0.7, friction: 0.0, frictionAir: 0.0 },
+    { isStatic: true, restitution: 0.7, friction: 0.0, frictionAir: 0.05 },
     {
       save: false, sample: 10, offset: { x: 0, y: 0 }, done: (added, time, fromCache) => {
         for (let id in added) {
@@ -126,7 +126,7 @@ function draw() {
 
             Matter.Body.setAngularVelocity(body, 0);  // **防止继续旋转**
 
-            
+
             body.collisionFilter = cfHit;
           }
         }
