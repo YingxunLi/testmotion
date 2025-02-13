@@ -38,7 +38,7 @@ function setup() {
 
   ground = new BlockCore(
     world,
-    { x: 400, y: height + 10, w: width, h: 20, color: 'white' },
+    { x: 400, y: height + 10, w: width, h: 20, color: 'blue' },
     { isStatic: true }
   );
 
