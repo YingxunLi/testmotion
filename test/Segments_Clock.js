@@ -289,27 +289,3 @@ function mousePressed() {
   }
 }
 
-function requestMotionPermission() {
-  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-    DeviceOrientationEvent.requestPermission()
-      .then(permissionState => {
-        if (permissionState === 'granted') {
-          window.addEventListener('deviceorientation', handleOrientation);
-        }
-      })
-      .catch(console.error);
-  } else {
-    // Für Android: Event direkt registrieren
-    window.addEventListener('deviceorientation', handleOrientation);
-  }
-}
-
-function handleOrientation(event) {
-  let tiltX = event.beta;  // Neigung vor/zurück (Wertebereich -90 bis 90)
-  let tiltY = event.gamma; // Neigung links/rechts (Wertebereich -90 bis 90)
-
-  engine.gravity.x = (tiltY / 50).toFixed(2);
-  engine.gravity.y = (tiltX / 50).toFixed(2);
-}
-
-document.addEventListener("click", requestMotionPermission);
