@@ -1,3 +1,12 @@
+/*
+VSCode Find/Replace mit .*
+<g id="([^"]+)">\n    <path([^\n]+)\n  </g>
+<path id="$1"$2
+<g id="([^"]+)">\n    <polygon([^\n]+)\n  </g>
+<polygon id="$1"$2
+<g id="([^"]+)">\n    <rect([^\n]+)\n  </g>
+<rect id="$1"$2
+*/
 let Engine = Matter.Engine,
   World = Matter.World,
   Bodies = Matter.Bodies,
@@ -30,7 +39,6 @@ function setup() {
 
   engine = Engine.create();
   world = engine.world;
-  
   engine.gravity.y = 0;
 
   ground = new BlockCore(
@@ -50,7 +58,7 @@ walls.push(new BlockCore(world, { x: width / 2, y: height + 30, w: width, h: 60,
   // Die Ziffern werden 1x geladen werden und später durch kopieren verwendet
   // "save: true" speichert die Daten im Browser
   // wenn das SVG geändert wird, muss es 1x auf "save: false" gesetzt werden !!!
-  new BlocksFromSVG(world, 'Segments_Ziffern.svg', [],
+  new BlocksFromSVG(world, 'ZahlenBIG2.svg', [],
     { isStatic: true, restitution: 0.7, friction: 0.0, frictionAir: 0.0 },
     {
       save: false, sample: 10, offset: { x: 0, y: 0 }, done: (added, time, fromCache) => {
@@ -133,6 +141,44 @@ function removeDigit(d, z) {
   }
 }
 
+function draw() {
+  background(0);
+
+  if (!stopped) {
+    if (reset > 0) {
+      magnets.forEach(list => list.forEach(magnet => {
+        const body = magnet.attracted[0];
+        if (!body.isStatic) {
+          magnet.attract();
+          const d = dist(magnet.body.position.x, magnet.body.position.y, body.position.x, body.position.y)
+          if (d < 100) {
+            reset--;
+            Matter.Body.setPosition(body, body.plugin.lastPos);
+            Matter.Body.setStatic(body, true);
+            Matter.Body.setAngle(body, 0);
+            // body.collisionFilter = cfHit;
+          }
+        } else {
+          // body.collisionFilter = cfPass;
+        }
+      }));
+    } else {
+      clock();
+    }
+  }
+  digits.forEach(part => part.draw());
+  // magnets.forEach(list => list.forEach(magnet => magnet.draw()));
+  ground.draw();
+  walls.forEach(wall => wall.draw());
+
+  mouse.draw();
+
+  // Update gravity based on current direction
+  engine.world.gravity.x = gravityDirection.x;
+  engine.world.gravity.y = gravityDirection.y;
+
+}
+
 function keyPressed() {
   if (keyCode === LEFT_ARROW) {
     gravityDirection = { x: -1, y: 0 };
@@ -161,14 +207,6 @@ function mousePressed() {
 
 let showColon = true; // Variable zur Steuerung des Doppelpunkts
 
-function updateCollisionFilter(body, enableCollision) {
-  if (enableCollision) {
-    body.collisionFilter = { ...cfHit, mask: 0xFFFFFFFF }; // Standard-Kollision
-  } else {
-    body.collisionFilter = { ...cfHit, mask: 0x0001 }; // Nur Kollision mit Wänden
-  }
-}
-
 function draw() {
   background(0);
 
@@ -177,17 +215,19 @@ function draw() {
       magnets.forEach(list => list.forEach(magnet => {
         const body = magnet.attracted[0];
         if (!body.isStatic) {
-          updateCollisionFilter(body, false);
+          // Deaktiviere die Kollision, solange der Magnet anzieht
+          body.collisionFilter = cfPass;
           
           magnet.attract();
-          const d = dist(magnet.body.position.x, magnet.body.position.y, body.position.x, body.position.y);
+          const d = dist(magnet.body.position.x, magnet.body.position.y, body.position.x, body.position.y)
           if (d < 60) {
             reset--;
             Matter.Body.setPosition(body, body.plugin.lastPos);
             Matter.Body.setStatic(body, true);
             Matter.Body.setAngle(body, 0);
             
-            updateCollisionFilter(body, true);
+            // Reaktiviere die Kollision, sobald das Teil am Platz ist
+            body.collisionFilter = cfHit;
           }
         }
       }));
@@ -201,17 +241,18 @@ function draw() {
   walls.forEach(wall => wall.draw());
   mouse.draw();
 
+  // Update gravity based on current direction
   engine.world.gravity.x = gravityDirection.x;
   engine.world.gravity.y = gravityDirection.y;
   
+  // Zeichne den Doppelpunkt
   if (showColon) {
-    fill(0, 79, 79);
+    fill(0,79,79);
     noStroke();
     ellipse(440, 350, 45, 45);
     ellipse(440, 450, 45, 45);
   }
 }
-
 
 
   digits.forEach(part => part.draw());
@@ -220,12 +261,12 @@ function draw() {
   mouse.draw();
 
   // Update gravity based on current direction
-  engine.world.gravity.x = gravityDirection.x;
-  engine.world.gravity.y = gravityDirection.y;
+  engine.gravity.x = (rotationY / 2 - engine.gravity.x) * 0.5;
+  engine.gravity.y = (rotationX / 2 - engine.gravity.y) * 0.5;
   
   // Zeichne den Doppelpunkt
   if (showColon) {
-    fill('red');
+    fill(255);
     noStroke();
     ellipse(440, 350, 45, 45);
     ellipse(440, 450, 45, 45);
@@ -248,4 +289,3 @@ function mousePressed() {
     showColon = !showColon;
   }
 }
-
